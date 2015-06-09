@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{PowerDNS experimental HTTP JSON API library.}
   spec.description   = %q{This library provides an interface for the
                           still experimental PowerDNS HTTP JSON API. }
-  spec.homepage      = "https://www.aibor.de/cgit/powernds_http_api"
+  spec.homepage      = "https://github.com/aibor/powernds_http_api"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
@@ -22,5 +22,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler", "~> 1.7"
   spec.add_development_dependency "rake", "~> 10.0"
 
-  spec.add_dependency "activeresource"
+  spec.add_dependency "activeresource", "~> 4.0.0"
 end

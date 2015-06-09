@@ -21,8 +21,8 @@ module PowerdnsHttpApi
     end
 
 
-    has_many :records
-    has_many :cryptokeys
+    has_many :records, class_name: 'PowerdnsHttpApi::Record'
+    has_many :cryptokeys, class_name: 'PowerdnsHttpApi::Cryptokey'
 
 
     soa_edits = %w(INCREMENT-WEEKS INCEPTION-EPOCH INCEPTION-INCREMENT
