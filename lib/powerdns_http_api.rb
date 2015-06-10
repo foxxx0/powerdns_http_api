@@ -4,6 +4,10 @@ module PowerdnsHttpApi
 
   VERSION = '0.0.1'
 
+  BASE_URL = 'http://not.working.example.com/servers/localhost'
+
+  API_KEY = 'NotTheRightKey'
+
 
   autoload :Resource,     'powerdns_http_api/resource'
   autoload :Record,       'powerdns_http_api/record'

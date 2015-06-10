@@ -9,28 +9,32 @@ module PowerdnsHttpApi
 
     module ClassMethods
 
-      def fixed_values(hash)
-        hash.each do |key, value|
-          const_set key.to_s.camelcase, value
+      def inherited(subclass)
+        super
+        subclass.element_name = element_name
+      end
 
-          [value].flatten.compact.each do |value|
+
+      def fixed_values(hash)
+        hash.each do |key, value_set|
+          const_set key.to_s.camelcase, value_set
+
+          [value_set].flatten.compact.each do |value|
+            next if value.empty?
             meth_name = "#{value.downcase.tr('-', '_')}?"
             define_method(meth_name) { value == self.send(key) }
           end
 
-          validates key, inclusion: {in: value}
+          validates key, inclusion: {in: value_set}
         end
       end
 
     end
 
-
-    ##
     # Classes that inherit from this object get the essential details set:
     # * PowerDNS-API url 
     # * HTTP header field for the API key
     # * disables format extension for resources
-
     def self.inherited(subclass)
       subclass.site = BASE_URL
       subclass.headers['X-API-Key'] = API_KEY
@@ -41,29 +45,23 @@ module PowerdnsHttpApi
     end
 
 
-    ##
     # Attributes hash hash value in decimal notation.
     #
     # @return [Fixnum]
-
     def hash
       attributes.hash
     end
 
 
-    ##
     # Attributes hash hash value in haxadecimal notation.
     #
     # @return [String]
-
     def hexhash
       hash.to_s(16)
     end
 
 
-    ##
-    # return [String]
-
+    # @return [String]
     def inspect
       attrs = attributes.map { |k, v| "#{k}: #{v.inspect}" }
       "#<#{self.class} #{attrs.join(', ')}>"

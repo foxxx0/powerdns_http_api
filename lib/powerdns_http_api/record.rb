@@ -7,8 +7,11 @@ module PowerdnsHttpApi
     include Comparable
 
 
+    # Representation of a SOA resource record.
     SOA = Struct.new(:raw, :mname, :rname, :serial, :refresh, :retry,
                      :expire, :negcache) do
+
+      # @param rr [Record]
       def initialize(rr)
         if not rr.respond_to?(:type)
           raise ArgumentError, "must be a Record. '#{rr.class}' given."
@@ -18,23 +21,23 @@ module PowerdnsHttpApi
           super(rr.content, *rr.content.split)
         end
       end
+
     end
 
 
     schema do
-      string *%w(name type content)
+      string(*%w(name type content))
       integer 'ttl'
       boolean 'disabled'
     end
 
-
+    # Since the records are only available as part of the zone and
+    # don't bring their own id, use the hexhash as id.
     alias :id :hexhash
-
 
     fixed_values type: %w(A AAAA AFSDB CERT CNAME DLV DNAME DNSKEY DS
       EUI48 EUI64 HINFO KEY LOC MINFO MX NAPTR NS NSEC NSEC3 NSEC3PARAM
       OPT PTR RKEY RP RRSIG SOA SSHFP SRV TLSA TXT)
-
 
     validates :name, presence: true,
       format: {with: /[^.]\z/, message: :no_trailing_dots}
@@ -44,78 +47,65 @@ module PowerdnsHttpApi
     validate :name_is_absolute
 
 
+    # Zone object that record belongs to.
+    # 
+    # @param zone [Zone]
+    # @return [Zone]
     attr_accessor :zone
 
 
-    ##
     # @return [void]
-
     def disable
       self.disabled = true
     end
 
 
-    ##
     # @return [void]
-
     def enable
       self.disabled = false
     end
 
 
-    ##
+    # @param other [Record]
     # @return [Boolean]
-
     def ==(other)
       super(other) && attributes == other.attributes
     end
 
 
-    ##
     # @return [Fixnum, nil]
-
     def priority
       content.split[-2][/\d+/] if mx? 
     end
 
 
-    ##
     # @return [RRSet]
-
     def rrset
       RRSet.new self.name, self.type
     end
 
 
-    ##
     # Check if two Records belong to the same rrset.
     #
     # @param other [Record]
-
     def same_rrset?(other)
       rrset == other.rrset
     end
 
 
-    ##
-    # return [Array(String)]
-
+    # @return [Array(String)]
     def labels
       name.split('.')
     end
 
 
-    ##
-    # return [String]
-
+    # @return [String]
     def shortname
       relative_name(self.name.to_s)
     end
 
 
-    ##
-    # return [String]
-
+    # @return [String]
     def shortcontent
       case self.type
       when 'MX' then relative_name(content.split.last)
@@ -125,11 +115,9 @@ module PowerdnsHttpApi
     end
 
 
-    ##
     # @param shortnames [Boolean] whether to use short domain names 
     # @param namelength [Fixnum] minlength of name field
-    # @return [String]
-
+    # @return [String] BIND zone file line representation
     def to_zone_file_line(shortnames: false, namelength: 30)
       name, content = if shortnames
                         [shortname, shortcontent]
@@ -143,11 +131,9 @@ module PowerdnsHttpApi
     end
 
 
-    ##
     # @param content [String] new content
     # @param remote_ip [String] fallback content for A and AAAA records
     # @return [self]
-
     def update_content!(content, remote_ip)
       content ||= remote_ip if a? and remote_ip[/\./]
       content ||= remote_ip if aaaa? and remote_ip[/\:/]
@@ -162,10 +148,8 @@ module PowerdnsHttpApi
     end
 
 
-    ##
     # @param (see #update_content!)
     # @return [Boolean]
-
     def update_content(*args)
       update_content!(*args)
       true
@@ -175,22 +159,18 @@ module PowerdnsHttpApi
     end
 
 
-    ##
     # @return [-1, 0, 1] if comparable
     # @return [nil] if not comparable
-
     def <=>(other)
       other.is_a?(self.class) ? compare(other) : super
     end
 
 
-    ##
     # Before a Record is saved we need to make sure that the name
     # doesn't end with a '.' and set or add the zone name if it isn't
     # present yet. Also other values should be sanitized.
     #
     # @return [self]
-
     def sanitize_values!
       self.name.chomp!('.')
 
@@ -212,7 +192,6 @@ module PowerdnsHttpApi
 
     protected
 
-    ##
     # Compare Records to provide a sane order. We want SOA records first,
     # then NS, then MX and the rest ordered by its name.
     # This comparison is inteded to be used for ordering of resource
@@ -221,7 +200,6 @@ module PowerdnsHttpApi
     # @param other [Record]
     #
     # @return [-1, 0, 1]
-
     def compare(other)
       comparisons = %i(type content).inject({}) do |hash, attr| 
         hash.merge(attr => self.send(attr) <=> other.send(attr))
@@ -249,21 +227,28 @@ module PowerdnsHttpApi
 
     private
 
+    # @param record_name [String]
+    # @return [String]
     def relative_name(record_name)
       relname = record_name.sub(/.?#{@zone.name}\.?$/,'')
         relname.blank? ? '@' : relname
     end
 
 
+    # @param record_name [String]
+    # @return [void]
     def append_zone_name!(string)
       if string.in? [nil, '', '@']
         string.replace(@zone.name)
       else
-        string.sub! /$(?<!#{@zone.name}|\.)/, ".#{@zone.name}"
+        string.sub!(/$(?<!#{@zone.name}|\.)/, ".#{@zone.name}")
       end
     end
 
 
+    # @api private
+    # validation method that checks if the record name is ending with
+    # the zone name
     def name_is_absolute
       unless self.name[/#{@zone.name}$/]
         errors.add(:name, :not_absolute)
