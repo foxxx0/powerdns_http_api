@@ -24,5 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "yard", "~> 0.8.7"
   spec.add_development_dependency "minitest", "~> 5.0"
 
-  spec.add_dependency "activeresource", "~> 4.0.0"
+  spec.add_dependency "activeresource", ">= 4.0.0"
 end
